@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DoorDash配送 - Firebase与Stripe集成</title>
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1/new.min.css"
+    />
+    <style>
+      fieldset {
+        margin-bottom: 20px;
+      }
+      .error-message {
+        color: red;
+        height: 2em;
+      }
+      .success-message {
+        color: green;
+        height: 2em;
+      }
+      .hidden {
+        display: none;
+      }
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 2s linear infinite;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .status-container {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin-top: 20px;
+        border-radius: 5px;
+      }
+      .status-item {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 3px;
+      }
+      .status-timestamp {
+        font-size: 0.8em;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DoorDash配送与Stripe支付</h1>
+    <section id="firebaseui-auth-container"></section>
+    <div id="loader">加载中 &hellip;</div>
+    
+    <section id="content" style="display: none;">
+      <nav>
+        <a href="index.html">首页</a> | 
+        <a href="doordash.html">配送</a> | 
+        <button type="button" id="signout">退出登录</button>
+      </nav>
+      
+      <h2>请求配送报价</h2>
+      <form id="quote-form">
+        <fieldset>
+          <legend>商家信息</legend>
+          <div>
+            <label>
+              商家ID:
+              <input type="text" name="business-id" id="business-id" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              店铺ID:
+              <input type="text" name="store-id" id="store-id" required />
+            </label>
+          </div>
+        </fieldset>
+        
+        <fieldset>
+          <legend>取货信息</legend>
+          <div>
+            <label>
+              取货说明:
+              <input type="text" name="pickup-instructions" value="到达时请致电" />
+            </label>
+          </div>
+        </fieldset>
+        
+        <fieldset>
+          <legend>送达信息</legend>
+          <div>
+            <label>
+              送达地址:
+              <input type="text" name="dropoff-address" value="901 Market Street 6th Floor San Francisco, CA 94103" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              联系电话:
+              <input type="text" name="dropoff-phone" value="+16505555555" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              送达说明:
+              <input type="text" name="dropoff-instructions" value="在门禁上输入密码1234" />
+            </label>
+          </div>
+        </fieldset>
+        
+        <fieldset>
+          <legend>订单信息</legend>
+          <div>
+            <label>
+              订单金额(分):
+              <input type="number" name="order-value" value="1999" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              小费(分):
+              <input type="number" name="tip" value="100" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              商品名称:
+              <input type="text" name="item-name" value="鸡肉卷" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              商品数量:
+              <input type="number" name="item-quantity" value="2" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              商品ID:
+              <input type="text" name="item-id" value="418575" required />
+            </label>
+          </div>
+        </fieldset>
+        
+        <div class="error-message" id="quote-error"></div>
+        <button type="submit">获取配送报价 <span id="quote-loader" class="loader" style="display: none;"></span></button>
+      </form>
+      
+      <div id="quote-result" style="display: none;">
+        <h3>配送报价</h3>
+        <p>配送费: <strong id="quote-amount"></strong></p>
+        <p>报价有效期至: <span id="quote-expiry"></span> (剩余时间: <span id="quote-countdown">5:00</span>)</p>
+        <div id="quote-expired" style="display: none; color: red;">
+          <p>此报价已过期。请重新获取报价。</p>
+          <button onclick="location.reload()">重新获取报价</button>
+        </div>
+      </div>
+      
+      <div id="payment-section" style="display: none;">
+        <h3>支付配送费</h3>
+        <form id="payment-form-delivery">
+          <input type="hidden" name="delivery-id" id="delivery-id" />
+          <div>
+            <label>
+              支付卡:
+              <select name="payment-method" required></select>
+            </label>
+          </div>
+          <div class="error-message" id="payment-error"></div>
+          <button type="submit">确认支付 <span id="payment-loader" class="loader" style="display: none;"></span></button>
+        </form>
+      </div>
+      
+      <div id="payment-success" class="success-message" style="display: none;">
+        支付成功！您的配送已安排。
+      </div>
+      
+      <div id="delivery-tracking" class="status-container" style="display: none;">
+        <h3>配送状态跟踪</h3>
+        <div id="delivery-status" class="status-item">初始化配送...</div>
+        <div id="status-history"></div>
+      </div>
+    </section>
+    
+    <hr />
+    <footer>
+      <a href="https://github.com/firebase/functions-samples/tree/main/stripe">
+        查看源代码
+      </a>
+    </footer>
+
+    <!-- 导入和配置Firebase SDK -->
+    <script src="/__/firebase/9.17.1/firebase-app-compat.js"></script>
+    <script src="/__/firebase/9.17.1/firebase-auth-compat.js"></script>
+    <script src="/__/firebase/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="/__/firebase/9.17.1/firebase-functions-compat.js"></script>
+    <script src="/__/firebase/init.js"></script>
+
+    <!-- 导入Firebase UI -->
+    <script src="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.js"></script>
+
+    <!-- Stripe的JS库 -->
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <!-- 我们的应用脚本 -->
+    <script src="/javascript/app.js"></script>
+    <script src="/javascript/delivery.js"></script>
+  </body>
+</html> 
