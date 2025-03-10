@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>商家注册 - DoorDash配送集成</title>
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1/new.min.css"
+    />
+    <style>
+      fieldset {
+        background-color: #f6f8fa;
+        margin-bottom: 20px;
+      }
+      .error-message {
+        color: red;
+        height: 2em;
+      }
+      .success-message {
+        color: green;
+        height: 2em;
+      }
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 2s linear infinite;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>商家注册</h1>
+    <section id="firebaseui-auth-container"></section>
+    <div id="loader">加载中 &hellip;</div>
+    
+    <section id="content" style="display: none;">
+      <nav>
+        <a href="index.html">首页</a> | 
+        <a href="doordash.html">配送</a> | 
+        <a href="business-register.html">商家注册</a> | 
+        <button type="button" id="signout">退出登录</button>
+      </nav>
+      
+      <div id="business-form-container">
+        <h2>注册为DoorDash商家</h2>
+        <p>请填写以下信息，注册成为DoorDash配送服务的商家。</p>
+        
+        <form id="business-form">
+          <fieldset>
+            <legend>商家信息</legend>
+            <div>
+              <label>
+                商家名称:
+                <input type="text" name="business-name" required />
+              </label>
+            </div>
+            <div>
+              <label>
+                联系电话:
+                <input type="text" name="business-phone" placeholder="+12065551212" required />
+              </label>
+            </div>
+            <div>
+              <label>
+                商家地址:
+                <input type="text" name="business-address" placeholder="1346 Powell St, San Francisco, CA 94133" required />
+              </label>
+            </div>
+          </fieldset>
+          
+          <div class="error-message" id="business-error"></div>
+          <button type="submit">注册商家 <span id="business-loader" class="loader" style="display: none;"></span></button>
+        </form>
+      </div>
+      
+      <div id="business-success" style="display: none;">
+        <h2>注册成功！</h2>
+        <p>您已成功注册为DoorDash商家。</p>
+        <p>商家ID: <strong id="business-id"></strong></p>
+        <p>店铺ID: <strong id="store-id"></strong></p>
+        <p><a href="doordash.html" class="button">开始使用配送服务</a></p>
+      </div>
+    </section>
+    
+    <hr />
+    <footer>
+      <a href="https://github.com/firebase/functions-samples/tree/main/stripe">
+        查看源代码
+      </a>
+    </footer>
+
+    <!-- 导入和配置Firebase SDK -->
+    <script src="/__/firebase/9.17.1/firebase-app-compat.js"></script>
+    <script src="/__/firebase/9.17.1/firebase-auth-compat.js"></script>
+    <script src="/__/firebase/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="/__/firebase/9.17.1/firebase-functions-compat.js"></script>
+    <script src="/__/firebase/init.js"></script>
+
+    <!-- 导入Firebase UI -->
+    <script src="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.js"></script>
+
+    <!-- 我们的应用脚本 -->
+    <script src="/javascript/app.js"></script>
+    <script src="/javascript/business.js"></script>
+  </body>
+</html> 
